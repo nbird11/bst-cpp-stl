@@ -50,7 +50,7 @@ namespace custom
    template <typename T>
    class BST
    {
-      friend class ::TestBST; // give unit tests access to the privates
+      friend class ::TestBST; // give unit tests access to private members
       friend class ::TestSet;
       friend class ::TestMap;
 
