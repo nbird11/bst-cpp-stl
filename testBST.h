@@ -119,8 +119,8 @@ public:
       //test_erase_oneChild();
       //test_erase_twoChildren();
       //test_erase_twoChildrenSpecial();
-      //test_clear_empty();
-      //test_clear_standard();
+      test_clear_empty();
+      test_clear_standard();
 
       // Status
       test_empty_empty();

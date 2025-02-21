@@ -119,6 +119,10 @@ namespace custom
       class  BNode;
       BNode* root;              // root node of the binary search tree
       size_t numElements;       // number of elements currently in the tree
+
+
+      // Recursive clear helper function.
+      void clear(BST<T>::BNode*& pNode) noexcept;
    };
 
 
@@ -199,35 +203,35 @@ namespace custom
       {}
       iterator(const iterator& rhs)
       {}
-      iterator& operator = (const iterator& rhs)
+      iterator& operator =(const iterator& rhs)
       {
          return *this;
       }
 
       // compare
-      bool operator == (const iterator& rhs) const
+      bool operator ==(const iterator& rhs) const
       {
          return true;
       }
-      bool operator != (const iterator& rhs) const
+      bool operator !=(const iterator& rhs) const
       {
          return true;
       }
 
       // de-reference. Cannot change because it will invalidate the BST
-      const T& operator * () const
+      const T& operator *() const
       {
          return *(new T);
       }
 
       // increment and decrement
-      iterator& operator ++ ();
-      iterator   operator ++ (int postfix)
+      iterator& operator ++();
+      iterator  operator ++(int postfix)
       {
          return *this;
       }
-      iterator& operator -- ();
-      iterator   operator -- (int postfix)
+      iterator& operator --();
+      iterator  operator --(int postfix)
       {
          return *this;;
       }
@@ -375,7 +379,25 @@ namespace custom
    template <typename T>
    void BST<T>::clear() noexcept
    {
+      clear(root);
+      numElements = 0;
+   }
 
+   /*****************************************************
+   * BST :: CLEAR_RECURSIVE
+   * Removes all the BNodes from a tree
+   ****************************************************/
+   template <typename T>
+   void BST<T>::clear(BST<T>::BNode*& pNode) noexcept
+   {
+      if (!pNode)
+         return;
+
+      clear(pNode->pLeft);
+      clear(pNode->pRight);
+
+      delete pNode;
+      pNode = nullptr;
    }
 
    /*****************************************************
