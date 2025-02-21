@@ -298,7 +298,7 @@ namespace custom
     * BST :: DESTRUCTOR
     ********************************************/
    template <typename T>
-   BST<T>:: ~BST()
+   BST<T>::~BST()
    {
 
    }
@@ -309,7 +309,7 @@ namespace custom
     * Copy one tree to another
     ********************************************/
    template <typename T>
-   BST<T>& BST<T>:: operator = (const BST<T>& rhs)
+   BST<T>& BST<T>::operator =(const BST<T>& rhs)
    {
       return *this;
    }
@@ -319,7 +319,7 @@ namespace custom
     * Copy nodes onto a BTree
     ********************************************/
    template <typename T>
-   BST<T>& BST<T>:: operator = (const std::initializer_list<T>& il)
+   BST<T>& BST<T>::operator =(const std::initializer_list<T>& il)
    {
       return *this;
    }
@@ -329,7 +329,7 @@ namespace custom
     * Move one tree to another
     ********************************************/
    template <typename T>
-   BST<T>& BST<T>:: operator = (BST<T>&& rhs)
+   BST<T>& BST<T>::operator =(BST<T>&& rhs)
    {
       return *this;
    }
@@ -339,7 +339,7 @@ namespace custom
     * Swap two trees
     ********************************************/
    template <typename T>
-   void BST<T>::swap (BST<T>& rhs)
+   void BST<T>::swap(BST<T>& rhs)
    {
 
    }
@@ -381,7 +381,7 @@ namespace custom
    {
       clear(root);
       numElements = 0;
-   }
+   }  // TODO: replace with erase() when implemented
 
    /*****************************************************
    * BST :: CLEAR_RECURSIVE
@@ -398,7 +398,7 @@ namespace custom
 
       delete pNode;
       pNode = nullptr;
-   }
+   }  // TODO: replace with erase() when implemented
 
    /*****************************************************
     * BST :: BEGIN
@@ -435,7 +435,7 @@ namespace custom
     * Add a node to the left of the current node
     ******************************************************/
    template <typename T>
-   void BST<T>::BNode::addLeft (BNode* pNode)
+   void BST<T>::BNode::addLeft(BNode* pNode)
    {
       if (pNode)
          pNode->pParent = this;
@@ -448,7 +448,7 @@ namespace custom
     * Add a node to the right of the current node
     ******************************************************/
    template <typename T>
-   void BST<T>::BNode::addRight (BNode* pNode)
+   void BST<T>::BNode::addRight(BNode* pNode)
    {
       if (pNode)
          pNode->pParent = this;
@@ -460,7 +460,7 @@ namespace custom
     * Add a node to the left of the current node
     ******************************************************/
    template <typename T>
-   void BST<T>::BNode::addLeft (const T& t)
+   void BST<T>::BNode::addLeft(const T& t)
    {
       addLeft(new BNode(t));
    }
