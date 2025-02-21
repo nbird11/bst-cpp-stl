@@ -74,9 +74,9 @@ namespace custom
       // Assign
       //
 
-      BST& operator = (const BST& rhs);
-      BST& operator = (BST&& rhs);
-      BST& operator = (const std::initializer_list<T>& il);
+      BST& operator =(const BST& rhs);
+      BST& operator =(BST&& rhs);
+      BST& operator =(const std::initializer_list<T>& il);
       void swap(BST& rhs);
 
       //
@@ -84,8 +84,8 @@ namespace custom
       //
 
       class iterator;
-      iterator   begin() const noexcept;
-      iterator   end()   const noexcept { return iterator(nullptr); }
+      iterator begin() const noexcept;
+      iterator end()   const noexcept { return iterator(nullptr); }
 
       //
       // Access
@@ -154,8 +154,8 @@ namespace custom
       // 
       // Status
       //
-      bool isRightChild(BNode* pNode) const { return true; }
-      bool isLeftChild(BNode* pNode) const { return true; }
+      bool isRightChild(BNode* pNode) const { return pParent == pNode && pNode->pRight == this; }
+      bool isLeftChild (BNode* pNode) const { return pParent == pNode && pNode->pLeft  == this; }
 
       // balance the tree
       void balance();
@@ -415,6 +415,9 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addLeft (BNode* pNode)
    {
+      if (pNode)
+         pNode->pParent = this;
+      pNode->pLeft = pLeft;
 
    }
 
@@ -425,7 +428,9 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addRight (BNode* pNode)
    {
-
+      if (pNode)
+         pNode->pParent = this;
+      pNode->pRight = pRight;
    }
 
    /******************************************************
@@ -433,9 +438,9 @@ namespace custom
     * Add a node to the left of the current node
     ******************************************************/
    template <typename T>
-   void BST<T> ::BNode::addLeft (const T& t)
+   void BST<T>::BNode::addLeft (const T& t)
    {
-
+      addLeft(new BNode(t));
    }
 
    /******************************************************
@@ -443,9 +448,9 @@ namespace custom
     * Add a node to the left of the current node
     ******************************************************/
    template <typename T>
-   void BST<T> ::BNode::addLeft(T&& t)
+   void BST<T>::BNode::addLeft(T&& t)
    {
-
+      addLeft(new BNode(std::move(t)));
    }
 
    /******************************************************
@@ -455,7 +460,7 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addRight(const T& t)
    {
-
+      addRight(new BNode(t));
    }
 
    /******************************************************
@@ -465,7 +470,7 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addRight(T&& t)
    {
-
+      addRight(new BNode(std::move(t)));
    }
 
 #ifdef DEBUG
