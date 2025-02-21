@@ -199,41 +199,46 @@ namespace custom
       friend class custom::map;
    public:
       // constructors and assignment
-      iterator(BNode* p = nullptr)
+      iterator(BNode* p = nullptr) : pNode(p)
       {}
-      iterator(const iterator& rhs)
+      iterator(const iterator& rhs) : pNode(rhs.pNode)
       {}
       iterator& operator =(const iterator& rhs)
       {
+         pNode = rhs.pNode;
          return *this;
       }
 
       // compare
       bool operator ==(const iterator& rhs) const
       {
-         return true;
+         return pNode == rhs.pNode;
       }
       bool operator !=(const iterator& rhs) const
       {
-         return true;
+         return pNode != rhs.pNode;
       }
 
       // de-reference. Cannot change because it will invalidate the BST
       const T& operator *() const
       {
-         return *(new T);
+         return pNode->data;
       }
 
       // increment and decrement
       iterator& operator ++();
       iterator  operator ++(int postfix)
       {
-         return *this;
+         iterator temp(*this);
+         ++this;
+         return temp;
       }
       iterator& operator --();
       iterator  operator --(int postfix)
       {
-         return *this;;
+         iterator temp(*this);
+         --this;
+         return temp;
       }
 
       // must give friend status to remove so it can call getNode() from it
@@ -241,7 +246,7 @@ namespace custom
 
    private:
 
-       // the node
+      // the node
       BNode* pNode;
    };
 
@@ -266,10 +271,12 @@ namespace custom
     * Copy one tree to another
     ********************************************/
    template <typename T>
-   BST<T>::BST (const BST<T>& rhs)
+   BST<T>::BST(const BST<T>& rhs)
    {
-      numElements = 99;
-      root = new BNode;
+      numElements = 0;
+      root = nullptr;
+
+      *this = rhs;
    }
 
    /*********************************************
@@ -279,8 +286,11 @@ namespace custom
    template <typename T>
    BST<T>::BST(BST<T>&& rhs)
    {
-      numElements = 99;
-      root = new BNode;
+      numElements = 0;
+      root = rhs.root;
+
+      rhs.root = nullptr;
+      rhs.numElements = 0;
    }
 
    /*********************************************
@@ -290,8 +300,10 @@ namespace custom
    template <typename T>
    BST<T>::BST(const std::initializer_list<T>& il)
    {
-      numElements = 99;
-      root = new BNode;
+      numElements = 0;
+      root = nullptr;
+
+      *this = il;
    }
 
    /*********************************************
@@ -300,7 +312,7 @@ namespace custom
    template <typename T>
    BST<T>::~BST()
    {
-
+      clear();
    }
 
 
@@ -321,7 +333,7 @@ namespace custom
    template <typename T>
    BST<T>& BST<T>::operator =(const std::initializer_list<T>& il)
    {
-      return *this;
+      clear();
    }
 
    /*********************************************
@@ -331,6 +343,8 @@ namespace custom
    template <typename T>
    BST<T>& BST<T>::operator =(BST<T>&& rhs)
    {
+      clear();
+      swap(rhs);
       return *this;
    }
 
@@ -341,7 +355,8 @@ namespace custom
    template <typename T>
    void BST<T>::swap(BST<T>& rhs)
    {
-
+      std::swap(root, rhs.root);
+      std::swap(numElements, rhs.numElements);
    }
 
    /*****************************************************
@@ -351,6 +366,7 @@ namespace custom
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(const T& t, bool keepUnique)
    {
+      // Case 1: No parent
       std::pair<iterator, bool> pairReturn(end(), false);
       return pairReturn;
    }
@@ -369,7 +385,65 @@ namespace custom
    template <typename T>
    typename BST<T>::iterator BST<T>::erase(iterator& it)
    {
-      return end();
+      // If the iterator is at the end, do nothing
+      if (it == end())
+         return end();
+
+      iterator itReturn = it;  // copy assignment operator
+      ++itReturn;  // always return the next node
+
+      BNode* pDelete = it.pNode;
+
+      // Case 1: No Children
+      if (!pDelete->pLeft && !pDelete->pRight)
+      {
+         // Make parent forget about us
+         if (pDelete->pParent && pDelete->isLeftChild(pDelete->pParent))
+            pDelete->pParent->pLeft = nullptr;
+         else if (pDelete->pParent)
+            // Must be right child if has parent and is not left child
+            pDelete->pParent->pRight = nullptr;
+
+         delete pDelete;
+         return itReturn;
+      }
+
+      // Case 2: One Child
+      //   Only left child
+      if (!pDelete->pRight && pDelete->pLeft)
+      {
+         // Hook up child to parent
+         pDelete->pLeft->pParent = pDelete->pParent;
+         // Hook up parent to child: left
+         if (pDelete->pParent && pDelete->isLeftChild(pDelete->pParent))
+            pDelete->pParent->pLeft = pDelete->pLeft;
+         // Hook up parent to child: right
+         else if (pDelete->pParent)
+            pDelete->pParent->pRight = pDelete->pLeft;
+
+         delete pDelete;
+         return itReturn;
+      }
+      //   Only right child
+      else if (pDelete->pRight && !pDelete->pLeft)
+      {
+         // Hook up child to parent
+         pDelete->pRight->pParent = pDelete->pParent;
+         // Hook up parent to child: left
+         if (pDelete->pParent && pDelete->isLeftChild(pDelete->pParent))
+            pDelete->pParent->pLeft = pDelete->pRight;
+         // hook up parent to child: right
+         else if (pDelete->pParent)
+            pDelete->pParent->pRight = pDelete->pRight;
+
+         delete pDelete;
+         return itReturn;
+      }
+
+      // Case 3: Two Children
+
+
+      return itReturn;
    }
 
    /*****************************************************
@@ -381,7 +455,7 @@ namespace custom
    {
       clear(root);
       numElements = 0;
-   }  // TODO: replace with erase() when implemented
+   }
 
    /*****************************************************
    * BST :: CLEAR_RECURSIVE
@@ -398,7 +472,7 @@ namespace custom
 
       delete pNode;
       pNode = nullptr;
-   }  // TODO: replace with erase() when implemented
+   }
 
    /*****************************************************
     * BST :: BEGIN
@@ -407,7 +481,15 @@ namespace custom
    template <typename T>
    typename BST<T>::iterator custom::BST<T>::begin() const noexcept
    {
-      return end();
+      if (empty())
+         return end();
+
+      BST<T>::BNode* p = root;
+      
+      while (p->pLeft)
+         p = p->pLeft;
+      
+      return iterator(p);
    }
 
 
@@ -439,8 +521,7 @@ namespace custom
    {
       if (pNode)
          pNode->pParent = this;
-      pNode->pLeft = pLeft;
-
+      pLeft = pNode;
    }
 
    /******************************************************
@@ -452,7 +533,7 @@ namespace custom
    {
       if (pNode)
          pNode->pParent = this;
-      pNode->pRight = pRight;
+      pRight = pNode;
    }
 
    /******************************************************
@@ -462,7 +543,9 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addLeft(const T& t)
    {
-      addLeft(new BNode(t));
+      if (t.root)
+         t.root -> pParent = this;
+      pLeft = t.root;
    }
 
    /******************************************************
@@ -482,7 +565,9 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addRight(const T& t)
    {
-      addRight(new BNode(t));
+      if (t.root)
+         t.root -> pParent = this;
+      pRight = t.root;
    }
 
    /******************************************************
@@ -654,6 +739,37 @@ namespace custom
    template <typename T>
    typename BST<T>::iterator& BST<T>::iterator::operator ++()
    {
+      // Don't increment if we're already at the end
+      if (!pNode)
+         return *this;
+
+      // Case 1: Have a right child
+      if (pNode->pRight)
+      {
+         pNode = pNode->pRight;
+         while (pNode->pLeft)
+            pNode = pNode->pLeft;
+         return *this;
+      }
+
+      // Case 2: No right child and pCurr is parent's left child
+      if (!pNode->pRight && pNode->isLeftChild(pNode->pParent))
+      {
+         pNode = pNode->pParent;
+         return *this;
+      }
+
+      // Case 3: No right child and pCurr is parent's right child
+      if (!pNode->pRight && pNode->isRightChild(pNode->pParent))
+      {
+         while (pNode->pParent && pNode->isRightChild(pNode->pParent))
+            pNode = pNode->pParent;
+         pNode = pNode->pParent;
+         return *this;
+      }
+      
+      assert(false && "Unreachable");
+
       return *this;
    }
 
@@ -664,8 +780,38 @@ namespace custom
    template <typename T>
    typename BST<T>::iterator& BST<T>::iterator::operator --()
    {
-      return *this;
+      // Don't increment if we're already at the end
+      if (!pNode)
+         return *this;
 
+      // Case 1: Have a left child
+      if (pNode->pLeft)
+      {
+         pNode = pNode->pLeft;
+         while (pNode->pRight)
+            pNode = pNode->pRight;
+         return *this;
+      }
+
+      // Case 2: No left child and pCurr is parent's right child
+      if (!pNode->pLeft && pNode->isRightChild(pNode->pParent))
+      {
+         pNode = pNode->pParent;
+         return *this;
+      }
+
+      // Case 3: No left child and pCurr is parent's left child
+      if (!pNode->pLeft && pNode->isLeftChild(pNode->pParent))
+      {
+         while (pNode->pParent && pNode->isLeftChild(pNode->pParent))
+            pNode = pNode->pParent;
+         pNode = pNode->pParent;
+         return *this;
+      }
+
+      assert(false && "Unreachable");
+
+      return *this;
    }
 
 
