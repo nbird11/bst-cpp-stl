@@ -105,14 +105,14 @@ namespace custom
       // 
 
       iterator erase(iterator& it);
-      void   clear() noexcept;
+      void     clear() noexcept;
 
       // 
       // Status
       //
 
-      bool   empty() const noexcept { return true; }
-      size_t size()  const noexcept { return 99; }
+      bool   empty() const noexcept { return size() == 0; }
+      size_t size()  const noexcept { return numElements; }
 
    private:
 
@@ -134,18 +134,12 @@ namespace custom
       // 
       // Construct
       //
-      BNode()
-      {
-         pLeft = pRight = this;
-      }
-      BNode(const T& t)
-      {
-         pLeft = pRight = this;
-      }
-      BNode(T&& t)
-      {
-         pLeft = pRight = this;
-      }
+      BNode() : data(T()), pLeft(nullptr), pRight(nullptr), pParent(nullptr), isRed(true)
+      {}
+      BNode(const T& t) : data(t), pLeft(nullptr), pRight(nullptr), pParent(nullptr), isRed(true)
+      {}
+      BNode(T&& t) : data(std::move(t)), pLeft(nullptr), pRight(nullptr), pParent(nullptr), isRed(true)
+      {}
 
       //
       // Insert
@@ -154,7 +148,7 @@ namespace custom
       void addRight(BNode* pNode);
       void addLeft (const T& t);
       void addRight(const T& t);
-      void addLeft(T&& t);
+      void addLeft (T&& t);
       void addRight(T&& t);
 
       // 
@@ -261,11 +255,7 @@ namespace custom
      * BST :: DEFAULT CONSTRUCTOR
      ********************************************/
    template <typename T>
-   BST<T>::BST()
-   {
-      numElements = 99;
-      root = new BNode;
-   }
+   BST<T>::BST() : numElements(0), root(nullptr) {}
 
    /*********************************************
     * BST :: COPY CONSTRUCTOR
