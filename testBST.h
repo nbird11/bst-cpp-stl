@@ -35,12 +35,12 @@ public:
 
       // Construct
       test_construct_default();
-      //test_constructCopy_empty();
-      //test_constructCopy_one();
-      //test_constructCopy_standard();
-      //test_constructMove_empty();
-      //test_constructMove_one();
-      //test_constructMove_standard();
+      test_constructCopy_empty();
+      test_constructCopy_one();
+      test_constructCopy_standard();
+      test_constructMove_empty();
+      test_constructMove_one();
+      test_constructMove_standard();
       //test_constructInitializer_empty();
       //test_constructInitializer_standard();
       test_destruct_empty();

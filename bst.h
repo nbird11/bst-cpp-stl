@@ -119,10 +119,6 @@ namespace custom
       class  BNode;
       BNode* root;              // root node of the binary search tree
       size_t numElements;       // number of elements currently in the tree
-
-
-      // Recursive clear helper function.
-      void clear(BST<T>::BNode*& pNode) noexcept;
    };
 
 
@@ -146,6 +142,16 @@ namespace custom
       {}
 
       //
+      // Copy
+      //
+      static BNode* copy(const BNode* pSrc);
+      
+      //
+      // Assign
+      //
+      static void assign(BNode*& pDest, const BNode* pSrc);
+
+      //
       // Insert
       //
       void addLeft (BNode* pNode);
@@ -154,6 +160,11 @@ namespace custom
       void addRight(const T& t);
       void addLeft (T&& t);
       void addRight(T&& t);
+
+      //
+      // Remove
+      //
+      static void clear(BST<T>::BNode*& pNode) noexcept;
 
       // 
       // Status
@@ -271,11 +282,8 @@ namespace custom
     * Copy one tree to another
     ********************************************/
    template <typename T>
-   BST<T>::BST(const BST<T>& rhs)
+   BST<T>::BST(const BST<T>& rhs) : BST()
    {
-      numElements = 0;
-      root = nullptr;
-
       *this = rhs;
    }
 
@@ -284,13 +292,9 @@ namespace custom
     * Move one tree to another
     ********************************************/
    template <typename T>
-   BST<T>::BST(BST<T>&& rhs)
+   BST<T>::BST(BST<T>&& rhs) : BST()
    {
-      numElements = 0;
-      root = rhs.root;
-
-      rhs.root = nullptr;
-      rhs.numElements = 0;
+      *this = std::move(rhs);
    }
 
    /*********************************************
@@ -298,11 +302,8 @@ namespace custom
     * Create a BST from an initializer list
     ********************************************/
    template <typename T>
-   BST<T>::BST(const std::initializer_list<T>& il)
+   BST<T>::BST(const std::initializer_list<T>& il) : BST()
    {
-      numElements = 0;
-      root = nullptr;
-
       *this = il;
    }
 
@@ -323,17 +324,9 @@ namespace custom
    template <typename T>
    BST<T>& BST<T>::operator =(const BST<T>& rhs)
    {
+      BNode::assign(root, rhs.root);
+      numElements = rhs.numElements;
       return *this;
-   }
-
-   /*********************************************
-    * BST :: ASSIGNMENT OPERATOR with INITIALIZATION LIST
-    * Copy nodes onto a BTree
-    ********************************************/
-   template <typename T>
-   BST<T>& BST<T>::operator =(const std::initializer_list<T>& il)
-   {
-      clear();
    }
 
    /*********************************************
@@ -346,6 +339,16 @@ namespace custom
       clear();
       swap(rhs);
       return *this;
+   }
+
+   /*********************************************
+    * BST :: ASSIGNMENT OPERATOR with INITIALIZATION LIST
+    * Copy nodes onto a BTree
+    ********************************************/
+   template <typename T>
+   BST<T>& BST<T>::operator =(const std::initializer_list<T>& il)
+   {
+      clear();
    }
 
    /*********************************************
@@ -366,9 +369,33 @@ namespace custom
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(const T& t, bool keepUnique)
    {
-      // Case 1: No parent
-      std::pair<iterator, bool> pairReturn(end(), false);
-      return pairReturn;
+      if (!root)
+      {
+         root = new BNode(t);
+         return {iterator(root), true};
+      }
+
+      BNode* current = root;
+      BNode* parent = nullptr;
+      while (current)
+      {
+         parent = current;
+         if (keepUnique && t == current->data)
+            return {iterator(current), false};
+         else if (t < current->data)
+            current = current->pLeft;
+         else
+            current = current->pRight;
+      }
+
+      BNode* newNode = new BNode(t);
+      if (t < parent->data)
+         parent->pLeft = newNode;
+      else
+         parent->pRight = newNode;
+      
+      newNode->pParent = parent;
+      return {iterator(newNode), true};
    }
 
    template <typename T>
@@ -405,10 +432,11 @@ namespace custom
             pDelete->pParent->pRight = nullptr;
 
          delete pDelete;
+         numElements--;
          return itReturn;
       }
 
-      // Case 2: One Child
+      // Case 2: One Child - Replace node with child
       //   Only left child
       if (!pDelete->pRight && pDelete->pLeft)
       {
@@ -422,6 +450,7 @@ namespace custom
             pDelete->pParent->pRight = pDelete->pLeft;
 
          delete pDelete;
+         numElements--;
          return itReturn;
       }
       //   Only right child
@@ -437,11 +466,52 @@ namespace custom
             pDelete->pParent->pRight = pDelete->pRight;
 
          delete pDelete;
+         numElements--;
          return itReturn;
       }
 
-      // Case 3: Two Children
+      // Case 3: Two Children - Replace node with in-order successor
+      if (pDelete->pLeft && pDelete->pRight)
+      {
+         // Find in-order successor
+         BNode* pNext = itReturn.pNode;  // itReturn already points to next node in sequence.
 
+         // Part A: Copy the pointers from pDelete to pNext
+         pNext->pLeft = pDelete->pLeft;
+         pNext->pLeft->pParent = pNext;
+         
+         // Special case: if pNext is not pDelete's direct right child
+         if (pNext != pDelete->pRight)
+         {
+            // Hook up pNext's right child to pNext's parent if it exists
+            if (pNext->pRight)
+            {
+               pNext->pRight->pParent = pNext->pParent;
+               pNext->pParent->pLeft = pNext->pRight;  // pNext must be a left child
+            }
+            else
+               pNext->pParent->pLeft = nullptr;
+
+            // Hook up pDelete's right child to pNext
+            pNext->pRight = pDelete->pRight;
+            pNext->pRight->pParent = pNext;
+         }
+
+         // Hook up pNext to pDelete's parent
+         pNext->pParent = pDelete->pParent;
+         if (pDelete->pParent && pDelete->isLeftChild(pDelete->pParent))
+            pDelete->pParent->pLeft = pNext;
+         else if (pDelete->pParent)
+            pDelete->pParent->pRight = pNext;
+         else  // pDelete was the root
+            root = pNext;
+
+         delete pDelete;
+         numElements--;
+         return itReturn;
+      }
+
+      assert(false && "Unreachable");
 
       return itReturn;
    }
@@ -453,25 +523,8 @@ namespace custom
    template <typename T>
    void BST<T>::clear() noexcept
    {
-      clear(root);
+      BNode::clear(root);
       numElements = 0;
-   }
-
-   /*****************************************************
-   * BST :: CLEAR_RECURSIVE
-   * Removes all the BNodes from a tree
-   ****************************************************/
-   template <typename T>
-   void BST<T>::clear(BST<T>::BNode*& pNode) noexcept
-   {
-      if (!pNode)
-         return;
-
-      clear(pNode->pLeft);
-      clear(pNode->pRight);
-
-      delete pNode;
-      pNode = nullptr;
    }
 
    /*****************************************************
@@ -512,6 +565,67 @@ namespace custom
     ******************************************************/
 
 
+   /**********************************************
+    * COPY BINARY TREE
+    * Copy pSrc->pRight to pDest->pRight and
+    * pSrc->pLeft onto pDest->pLeft
+    *********************************************/
+   template <typename T>
+   inline typename BST<T>::BNode* BST<T>::BNode::copy(const BNode * pSrc)
+   {
+      if (!pSrc)
+         return nullptr;
+
+      BNode* pDest = new BNode(pSrc->data);
+      pDest->isRed = pSrc->isRed;
+
+      pDest->pLeft = copy(pSrc->pLeft);
+      if (pDest->pLeft)
+         pDest->pLeft->pParent = pDest;
+
+      pDest->pRight = copy(pSrc->pRight);
+      if (pDest->pRight)
+         pDest->pRight->pParent = pDest;
+
+      return pDest;
+   }
+
+   /******************************************************
+    * BINARY NODE :: Assignment
+    * Copy the values from pSrc onto pDest preserving
+    * as many of the nodes as possible.
+    ******************************************************/
+   template <typename T>
+   inline void BST<T>::BNode::assign(BNode*& pDest, const BNode* pSrc)
+   {
+      // Case 1: Source is empty.
+      if (!pSrc)
+      {
+         clear(pDest);
+         return;
+      }
+
+      // Case 2: Destination is empty.
+      if (!pDest)
+      {
+         pDest = copy(pSrc);
+         return;
+      }
+
+      // Case 3: Both are non-empty.
+      if (pSrc && pDest)
+      {
+         pDest->data = pSrc->data;
+         assign(pDest->pLeft, pSrc->pLeft);
+         if (pDest->pLeft)
+            pDest->pLeft->pParent = pDest;
+
+         assign(pDest->pRight, pSrc->pRight);
+         if (pDest->pRight)
+            pDest->pRight->pParent = pDest;
+      }
+   }
+
    /******************************************************
     * BINARY NODE :: ADD LEFT
     * Add a node to the left of the current node
@@ -543,9 +657,7 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addLeft(const T& t)
    {
-      if (t.root)
-         t.root -> pParent = this;
-      pLeft = t.root;
+      addLeft(new BNode(t));
    }
 
    /******************************************************
@@ -565,9 +677,7 @@ namespace custom
    template <typename T>
    void BST<T>::BNode::addRight(const T& t)
    {
-      if (t.root)
-         t.root -> pParent = this;
-      pRight = t.root;
+      addLeft(new BNode(t));
    }
 
    /******************************************************
@@ -578,6 +688,23 @@ namespace custom
    void BST<T>::BNode::addRight(T&& t)
    {
       addRight(new BNode(std::move(t)));
+   }
+
+   /*****************************************************
+   * BINARY NODE :: CLEAR RECURSIVE
+   * Removes all the BNodes from a tree
+   ****************************************************/
+   template <typename T>
+   inline void BST<T>::BNode::clear(BNode*& pNode) noexcept
+   {
+      if (!pNode)
+         return;
+
+      clear(pNode->pLeft);
+      clear(pNode->pRight);
+
+      delete pNode;
+      pNode = nullptr;
    }
 
 #ifdef DEBUG
