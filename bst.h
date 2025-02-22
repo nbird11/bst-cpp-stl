@@ -349,6 +349,9 @@ namespace custom
    BST<T>& BST<T>::operator =(const std::initializer_list<T>& il)
    {
       clear();
+      for (const T& t : il)
+         insert(t);
+      return *this;
    }
 
    /*********************************************
