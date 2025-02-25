@@ -372,33 +372,44 @@ namespace custom
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(const T& t, bool keepUnique)
    {
+      // If no root, insert as root.
       if (!root)
       {
          root = new BNode(t);
          return { iterator(root), true };
       }
 
+      // Go down the tree until you reach a leaf.
       BNode* current = root;
-      BNode* parent = nullptr;
+      BNode* leaf;
       while (current)
       {
-         parent = current;
+         // Save parent for later, will be the leaf node if t is not found.
+         leaf = current;
+
          if (keepUnique && t == current->data)
-            return {iterator(current), false};
-         else if (t < current->data)
+            return { iterator(current), false };  // Don't insert duplicates if keepUnique.
+         else if (t < current->data)   // Left subtree
             current = current->pLeft;
-         else
+         else                          // Right subtree
             current = current->pRight;
       }
 
+      assert(current == nullptr);
+      assert(leaf != nullptr);
+      assert(leaf->pLeft == nullptr && leaf->pRight == nullptr);
+
+      // Insert the new node as a child of leaf.
       BNode* newNode = new BNode(t);
-      if (t < parent->data)
-         parent->pLeft = newNode;
+      if (t < leaf->data)
+         leaf->pLeft = newNode;
       else
-         parent->pRight = newNode;
-      
-      newNode->pParent = parent;
-      return {iterator(newNode), true};
+         leaf->pRight = newNode;
+      newNode->pParent = leaf;
+
+      newNode->balance();
+
+      return { iterator(newNode), true };
    }
 
    template <typename T>
