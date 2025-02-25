@@ -154,11 +154,11 @@ namespace custom
       //
       // Insert
       //
-      void addLeft (BNode* pNode);
+      void addLeft(BNode* pNode);
+      void addLeft(const T& t);
+      void addLeft(T&& t);
       void addRight(BNode* pNode);
-      void addLeft (const T& t);
       void addRight(const T& t);
-      void addLeft (T&& t);
       void addRight(T&& t);
 
       //
@@ -375,7 +375,7 @@ namespace custom
       if (!root)
       {
          root = new BNode(t);
-         return {iterator(root), true};
+         return { iterator(root), true };
       }
 
       BNode* current = root;
@@ -556,6 +556,21 @@ namespace custom
    template <typename T>
    typename BST<T>::iterator BST<T>::find(const T& t)
    {
+      BNode* p = root;
+
+      if (!p)
+         return end();
+
+      while (p)
+      {
+         if (t == p->data)
+            return iterator(p);
+         else if (t < p->data)
+            p = p->pLeft;
+         else
+            p = p->pRight;
+      }
+
       return end();
    }
 

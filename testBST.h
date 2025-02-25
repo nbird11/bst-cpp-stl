@@ -86,10 +86,10 @@ public:
       test_iterator_dereference_standardRead();
 
       // Find
-      //test_find_empty();
-      //test_find_standardBegin();
-      //test_find_standardLast();
-      //test_find_standardMissing();
+      test_find_empty();
+      test_find_standardBegin();
+      test_find_standardLast();
+      test_find_standardMissing();
 
       // Insert
       //test_insert_oneLeft();
