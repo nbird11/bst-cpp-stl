@@ -367,7 +367,7 @@ namespace custom
 
    /*****************************************************
     * BST :: INSERT
-    * Insert a node at a given location in the tree
+    * Insert a node at its correct (sorted) location in the tree
     ****************************************************/
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(const T& t, bool keepUnique)
@@ -383,43 +383,37 @@ namespace custom
 
       // Go down the tree until you reach a leaf.
       BNode* current = root;
-      while (current->pLeft || current->pRight)
+      while (true)
       {
          if (keepUnique && t == current->data)
             return { iterator(current), false };  // Don't insert duplicates if keepUnique.
-         // Left subtree
-         else if (t < current->data)
+
+         if (t < current->data)  // Left subtree
          {
             if (!current->pLeft)
-               break;
+            {
+               BNode* newNode = new BNode(t);
+               current->addLeft(newNode);
+               newNode->balance(root);
+               numElements++;
+               return { iterator(newNode), true };
+            }
             current = current->pLeft;
          }
-         // Right subtree
-         else
+         else  // Right subtree
          {
             if (!current->pRight)
-               break;
+            {
+               BNode* newNode = new BNode(t);
+               current->addRight(newNode);
+               newNode->balance(root);
+               numElements++;
+               return { iterator(newNode), true };
+            }
             current = current->pRight;
          }
       }
-
-      if (keepUnique && t == current->data)
-         return { iterator(current), false };  // Don't insert duplicates if keepUnique.
-
-      // Insert the new node as a child of leaf.
-      BNode* newNode = new BNode(t);
-      if (t < current->data)
-         current->pLeft = newNode;
-      else
-         current->pRight = newNode;
-      newNode->pParent = current;
-
-      // Red-black balancing
-      newNode->balance(root);
-      numElements++;
-
-      return { iterator(newNode), true };
-   }
+   }  // insert()
 
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(T&& t, bool keepUnique)
@@ -435,43 +429,37 @@ namespace custom
 
       // Go down the tree until you reach a leaf.
       BNode* current = root;
-      while (current->pLeft || current->pRight)
+      while (true)
       {
          if (keepUnique && t == current->data)
             return { iterator(current), false };  // Don't insert duplicates if keepUnique.
-         // Left subtree
-         else if (t < current->data)
+
+         if (t < current->data)  // Left subtree
          {
             if (!current->pLeft)
-               break;
+            {
+               BNode* newNode = new BNode(std::move(t));
+               current->addLeft(newNode);
+               newNode->balance(root);
+               numElements++;
+               return { iterator(newNode), true };
+            }
             current = current->pLeft;
          }
-         // Right subtree
-         else
+         else  // Right subtree
          {
             if (!current->pRight)
-               break;
+            {
+               BNode* newNode = new BNode(std::move(t));
+               current->addRight(newNode);
+               newNode->balance(root);
+               numElements++;
+               return { iterator(newNode), true };
+            }
             current = current->pRight;
          }
       }
-
-      if (keepUnique && t == current->data)
-         return { iterator(current), false };  // Don't insert duplicates if keepUnique.
-
-      // Insert the new node as a child of leaf.
-      BNode* newNode = new BNode(std::move(t));
-      if (newNode->data < current->data)
-         current->pLeft = newNode;
-      else
-         current->pRight = newNode;
-      newNode->pParent = current;
-
-      // Red-black balancing
-      newNode->balance(root);
-      numElements++;
-
-      return { iterator(newNode), true };
-   }
+   }  // insert() move
 
    /*************************************************
     * BST :: ERASE

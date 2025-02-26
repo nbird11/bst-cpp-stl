@@ -21,8 +21,6 @@
 #include <string>
 #include <functional> // for std::less and std::greater
 
-#undef log
-#define log(x) std::cerr << __FUNCTION__ << ":" << __LINE__ << ": " << #x << " = " << x << std::endl;  // <DELETEME />
 
  /***********************************************
   * TEST BST
@@ -435,7 +433,6 @@ public:
       assertUnit(Spy::numAssignMove() == 0);
       assertUnit(Spy::numEquals() == 0);
       assertUnit(Spy::numLessthan() == 10);
-      log(Spy::numLessthan());
       assertStandardFixture(bstDest);
       // teardown
       teardownStandardFixture(bstDest);
