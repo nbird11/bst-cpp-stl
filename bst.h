@@ -145,7 +145,7 @@ namespace custom
       // Copy
       //
       static BNode* copy(const BNode* pSrc);
-      
+
       //
       // Assign
       //
@@ -170,10 +170,10 @@ namespace custom
       // Status
       //
       bool isRightChild(BNode* pNode) const { return pParent == pNode && pNode->pRight == this; }
-      bool isLeftChild (BNode* pNode) const { return pParent == pNode && pNode->pLeft  == this; }
+      bool isLeftChild (BNode* pNode) const { return pParent == pNode && pNode->pLeft == this; }
 
       // balance the tree
-      void balance();
+      void balance(BNode*& pRoot);
 
    #ifdef DEBUG
       //
@@ -376,38 +376,47 @@ namespace custom
       if (!root)
       {
          root = new BNode(t);
+         root->balance(root);
+         numElements++;
          return { iterator(root), true };
       }
 
       // Go down the tree until you reach a leaf.
       BNode* current = root;
-      BNode* leaf;
-      while (current)
+      while (current->pLeft || current->pRight)
       {
-         // Save parent for later, will be the leaf node if t is not found.
-         leaf = current;
-
          if (keepUnique && t == current->data)
             return { iterator(current), false };  // Don't insert duplicates if keepUnique.
-         else if (t < current->data)   // Left subtree
+         // Left subtree
+         else if (t < current->data)
+         {
+            if (!current->pLeft)
+               break;
             current = current->pLeft;
-         else                          // Right subtree
+         }
+         // Right subtree
+         else
+         {
+            if (!current->pRight)
+               break;
             current = current->pRight;
+         }
       }
 
-      assert(current == nullptr);
-      assert(leaf != nullptr);
-      assert(leaf->pLeft == nullptr && leaf->pRight == nullptr);
+      if (keepUnique && t == current->data)
+         return { iterator(current), false };  // Don't insert duplicates if keepUnique.
 
       // Insert the new node as a child of leaf.
       BNode* newNode = new BNode(t);
-      if (t < leaf->data)
-         leaf->pLeft = newNode;
+      if (t < current->data)
+         current->pLeft = newNode;
       else
-         leaf->pRight = newNode;
-      newNode->pParent = leaf;
+         current->pRight = newNode;
+      newNode->pParent = current;
 
-      newNode->balance();
+      // Red-black balancing
+      newNode->balance(root);
+      numElements++;
 
       return { iterator(newNode), true };
    }
@@ -415,8 +424,53 @@ namespace custom
    template <typename T>
    std::pair<typename BST<T>::iterator, bool> BST<T>::insert(T&& t, bool keepUnique)
    {
-      std::pair<iterator, bool> pairReturn(end(), false);
-      return pairReturn;
+      // If no root, insert as root.
+      if (!root)
+      {
+         root = new BNode(std::move(t));
+         root->balance(root);
+         numElements++;
+         return { iterator(root), true };
+      }
+
+      // Go down the tree until you reach a leaf.
+      BNode* current = root;
+      while (current->pLeft || current->pRight)
+      {
+         if (keepUnique && t == current->data)
+            return { iterator(current), false };  // Don't insert duplicates if keepUnique.
+         // Left subtree
+         else if (t < current->data)
+         {
+            if (!current->pLeft)
+               break;
+            current = current->pLeft;
+         }
+         // Right subtree
+         else
+         {
+            if (!current->pRight)
+               break;
+            current = current->pRight;
+         }
+      }
+
+      if (keepUnique && t == current->data)
+         return { iterator(current), false };  // Don't insert duplicates if keepUnique.
+
+      // Insert the new node as a child of leaf.
+      BNode* newNode = new BNode(std::move(t));
+      if (newNode->data < current->data)
+         current->pLeft = newNode;
+      else
+         current->pRight = newNode;
+      newNode->pParent = current;
+
+      // Red-black balancing
+      newNode->balance(root);
+      numElements++;
+
+      return { iterator(newNode), true };
    }
 
    /*************************************************
@@ -493,7 +547,7 @@ namespace custom
          // Part A: Copy the pointers from pDelete to pNext
          pNext->pLeft = pDelete->pLeft;
          pNext->pLeft->pParent = pNext;
-         
+
          // Special case: if pNext is not pDelete's direct right child
          if (pNext != pDelete->pRight)
          {
@@ -552,10 +606,10 @@ namespace custom
          return end();
 
       BST<T>::BNode* p = root;
-      
+
       while (p->pLeft)
          p = p->pLeft;
-      
+
       return iterator(p);
    }
 
@@ -600,7 +654,7 @@ namespace custom
     * pSrc->pLeft onto pDest->pLeft
     *********************************************/
    template <typename T>
-   inline typename BST<T>::BNode* BST<T>::BNode::copy(const BNode * pSrc)
+   inline typename BST<T>::BNode* BST<T>::BNode::copy(const BNode* pSrc)
    {
       if (!pSrc)
          return nullptr;
@@ -858,27 +912,148 @@ namespace custom
    }
 #endif // DEBUG
 
-/******************************************************
- * BINARY NODE :: BALANCE
- * Balance the tree from a given location
- ******************************************************/
+   /******************************************************
+    * BINARY NODE :: BALANCE
+    * Balance the tree from a given location
+    ******************************************************/
    template <typename T>
-   void BST<T>::BNode::balance()
+   void BST<T>::BNode::balance(BNode*& pRoot)
    {
       // Case 1: if we are the root, then color ourselves black and call it a day.
-
+      if (!pParent)
+      {
+         isRed = false;
+         return;
+      }
 
       // Case 2: if the parent is black, then there is nothing left to do
+      if (!pParent->isRed)
+         return;
+
+      BNode* pGranny = pParent->pParent;
+      BNode* pAunt   = pParent->isLeftChild(pGranny)
+         ? pGranny->pRight
+         : pGranny->pLeft;
+
+      BNode* pSibling = this->isLeftChild(pParent)
+         ? pParent->pRight
+         : pParent->pLeft;
 
       // Case 3: if the aunt is red, then just recolor
+      if (pAunt && pAunt->isRed)
+      {
+         // grandparent's kids turn black
+         pParent->isRed = false;
+         pAunt->isRed = false;
+         // grandparent turns red
+         pGranny->isRed = true;
+         // recurse off of grandparent
+         pGranny->balance(pRoot);
+         return;
+      }
 
       // Case 4: if the aunt is black or non-existant, then we need to rotate
+      if (!pAunt || !pAunt->isRed)
+      {
+         // Case 4a: We are mom's left and mom is granny's left
+         if (pParent->isRed && !pGranny->isRed
+             && pParent->pLeft == this
+             && pGranny->pLeft == pParent)
+         {
+            pParent->pParent = pGranny->pParent;
+            if (pGranny->pParent && pGranny->isLeftChild(pGranny->pParent))
+               pGranny->pParent->pLeft = pParent;
+            else if (pGranny->pParent)
+               pGranny->pParent->pRight = pParent;
 
-      // Case 4a: We are mom's left and mom is granny's left
-      // case 4b: We are mom's right and mom is granny's right
-      // Case 4c: We are mom's right and mom is granny's left
-      // case 4d: we are mom's left and mom is granny's right
-   }
+            pParent->addRight(pGranny);
+            pGranny->addLeft(pSibling);
+
+            pGranny->isRed = true;
+            pParent->isRed = false;
+
+            if (!pParent->pParent)
+               pRoot = pParent;
+
+            return;
+         }
+
+         // case 4b: We are mom's right and mom is granny's right
+         if (pParent->isRed && !pGranny->isRed
+             && pParent->pRight == this
+             && pGranny->pRight == pParent)
+         {
+            pParent->pParent = pGranny->pParent;
+            if (pGranny->pParent && pGranny->isLeftChild(pGranny->pParent))
+               pGranny->pParent->pLeft = pParent;
+            else if (pGranny->pParent)
+               pGranny->pParent->pRight = pParent;
+
+            pParent->addLeft(pGranny);
+            pGranny->addRight(pSibling);
+
+            pGranny->isRed = true;
+            pParent->isRed = false;
+
+            if (!pParent->pParent)
+               pRoot = pParent;
+
+            return;
+         }
+
+         // Case 4c: We are mom's right and mom is granny's left
+         if (this->isRightChild(pParent) && pParent->isLeftChild(pGranny))
+         {
+            pGranny->addLeft(this->pRight);
+            pParent->addRight(this->pLeft);
+
+            BNode* pParentTemp = pParent;  // Save pointer to parent
+            if (!pGranny->pParent)
+               this->pParent = nullptr;
+            else if (pGranny->isLeftChild(pGranny->pParent))
+               pGranny->pParent->pLeft = this;
+            else
+               pGranny->pParent->pRight = this;
+
+            this->addRight(pGranny);
+            this->addLeft(pParentTemp);
+
+            pGranny->isRed = true;
+            this->isRed = false;
+
+            if (!pParent)
+               pRoot = this;
+
+            return;
+         }
+
+         // case 4d: we are mom's left and mom is granny's right
+         if (this->isLeftChild(pParent) && pParent->isRightChild(pGranny))
+         {
+            pGranny->addRight(this->pLeft);
+            pParent->addLeft(this->pRight);
+
+            BNode* pParentTemp = pParent;  // Save pointer to parent
+            if (!pGranny->pParent)
+               this->pParent = nullptr;
+            else if (pGranny->isLeftChild(pGranny->pParent))
+               pGranny->pParent->pLeft = this;
+            else
+               pGranny->pParent->pRight = this;
+
+            this->addLeft(pGranny);
+            this->addRight(pParentTemp);
+
+            pGranny->isRed = true;
+            this->isRed = false;
+
+            if (!pParent)
+               pRoot = this;
+
+            return;
+         }
+      }  // Case 4
+   }  // balance()
 
    /*************************************************
     *************************************************
@@ -923,7 +1098,7 @@ namespace custom
          pNode = pNode->pParent;
          return *this;
       }
-      
+
       assert(false && "Unreachable");
 
       return *this;

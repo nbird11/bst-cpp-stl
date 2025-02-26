@@ -15,6 +15,7 @@
 #undef assertComplexFixture
 #undef assertStandardFixture
 #undef assertEmptyFixture
+//#undef logUnit
 
 
 #define assertUnit(condition)     assertUnitParameters(condition, #condition, __LINE__, __FUNCTION__)
@@ -22,6 +23,8 @@
 #define assertComplexFixture(x)   assertComplexFixtureParameters( x, __LINE__, __FUNCTION__)
 #define assertStandardFixture(x)  assertStandardFixtureParameters(x, __LINE__, __FUNCTION__)
 #define assertEmptyFixture(x)     assertEmptyFixtureParameters(   x, __LINE__, __FUNCTION__)
+
+//#define logUnit(x)                logParameters(x, __LINE__, __FUNCTION__)
 
 #include <iostream>  // for std::cerr
 #include <string>    // for std::string
@@ -118,6 +121,17 @@ protected:
          tests[sFunc];
       }
    }
+
+   //void logParameters(void* x, int line, const char* func)
+   //{
+   //   if (sizeof(x) == 8)
+   //   {
+   //      char* x = (char *)x;
+   //      std::string sFunc(func);
+   //      Failure failure{ std::string(x), line };
+   //      tests[sFunc].push_back(failure);
+   //   }
+   //}
    
    
    /*************************************************************

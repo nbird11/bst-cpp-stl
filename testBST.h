@@ -21,6 +21,9 @@
 #include <string>
 #include <functional> // for std::less and std::greater
 
+#undef log
+#define log(x) std::cerr << __FUNCTION__ << ":" << __LINE__ << ": " << #x << " = " << x << std::endl;  // <DELETEME />
+
  /***********************************************
   * TEST BST
   * Unit tests for the BST class
@@ -42,7 +45,7 @@ public:
       test_constructMove_one();
       test_constructMove_standard();
       test_constructInitializer_empty();
-      //test_constructInitializer_standard();  // TODO: depends on insert
+      test_constructInitializer_standard();  //
       test_destruct_empty();
       test_destruct_standard();
 
@@ -60,7 +63,7 @@ public:
       test_assignMove_oneToStandard();
       test_assignMove_standardToOne();
       test_assignMove_standardToStandard();
-      //test_assignInitializer_oneToStandard();  // TODO: depends on insert
+      test_assignInitializer_oneToStandard();  //
       test_assignInitializer_standardToEmpty();
       test_swap_emptyToEmpty();
       test_swap_standardToEmpty();
@@ -92,25 +95,25 @@ public:
       test_find_standardMissing();
 
       // Insert
-      //test_insert_oneLeft();
-      //test_insert_oneRight();
-      //test_insert_duplicate();
-      //test_insert_keepUnique();
-      //test_insertMove_oneLeft();
-      //test_insertMove_oneRight();
-      //test_insertMove_duplicate();
-      //test_insertMove_keepUnique();
-      //test_insert_case1();
-      //test_insert_case2();
-      //test_insert_case3();
-      //test_insert_case4aSimple();
-      //test_insert_case4bSimple();
-      //test_insert_case4cSimple();
-      //test_insert_case4dSimple();
-      //test_insert_case4aComplex();
-      //test_insert_case4bComplex();
-      //test_insert_case4cComplex();
-      //test_insert_case4dComplex();
+      test_insert_oneLeft();
+      test_insert_oneRight();
+      test_insert_duplicate();
+      test_insert_keepUnique();
+      test_insertMove_oneLeft();
+      test_insertMove_oneRight();
+      test_insertMove_duplicate();
+      test_insertMove_keepUnique();
+      test_insert_case1();
+      test_insert_case2();
+      test_insert_case3();
+      test_insert_case4aSimple();
+      test_insert_case4bSimple();
+      test_insert_case4cSimple();
+      test_insert_case4dSimple();
+      test_insert_case4aComplex();
+      test_insert_case4bComplex();
+      test_insert_case4cComplex();
+      test_insert_case4dComplex();
 
       // Remove
       test_erase_empty();
@@ -432,6 +435,7 @@ public:
       assertUnit(Spy::numAssignMove() == 0);
       assertUnit(Spy::numEquals() == 0);
       assertUnit(Spy::numLessthan() == 10);
+      log(Spy::numLessthan());
       assertStandardFixture(bstDest);
       // teardown
       teardownStandardFixture(bstDest);
@@ -2193,6 +2197,7 @@ public:
       auto pairBST = bst.insert(s);
       // verify
       assertUnit(Spy::numLessthan() == 1);    // compare [50]
+      //logUnit(Spy::numLessthan());
       assertUnit(Spy::numCopy() == 1);        // copy-create [40]
       assertUnit(Spy::numAlloc() == 1);       // allocate [40]
       assertUnit(Spy::numEquals() == 0);
